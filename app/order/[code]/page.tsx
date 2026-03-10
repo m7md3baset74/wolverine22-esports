@@ -42,7 +42,7 @@ export default function OrderPage() {
     order.accountCheck === "FailLoggedInConsoleTo";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-950/5 to-yellow-700/5 flex flex-col items-center justify-center p-6 gap-6">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-950/5 to-yellow-700/5 flex flex-col items-center justify-center p-4 sm:p-6 gap-6">
       {/* HEADER CARD */}
 
       <motion.div
@@ -50,11 +50,11 @@ export default function OrderPage() {
         animate={{ opacity: 1, y: 0 }}
         whileHover={{ scale: 1.02 }}
         transition={{ duration: 0.4 }}
-        className="w-[480px] bg-gradient-to-r from-yellow-900/70 to-yellow-600/20 rounded-2xl shadow-xl p-2 flex items-center gap-4"
+        className="w-full max-w-[480px] bg-gradient-to-r from-yellow-900/70 to-yellow-600/20 rounded-2xl shadow-xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4"
       >
         <img
           src="/generated-image.png"
-          className="w-22 h-22 object-contain bg-white/20 p-1 rounded-lg"
+          className="w-16 h-16 sm:w-22 sm:h-22 object-contain bg-white/20 p-1 rounded-lg"
         />
 
         <div>
@@ -73,11 +73,11 @@ export default function OrderPage() {
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white w-[480px] rounded-2xl shadow-2xl p-8"
+        className="bg-white w-full max-w-[480px] rounded-2xl shadow-2xl p-5 sm:p-8"
       >
         {/* TITLE */}
 
-        <h1 className="text-2xl font-bold text-center mb-6 text-gray-900">
+        <h1 className="text-xl sm:text-2xl font-bold text-center mb-6 text-gray-900">
           Order Status
         </h1>
 
@@ -149,7 +149,7 @@ export default function OrderPage() {
 
             <img
               src={`https://futtransfer.top/getScreenshot.php?transferID=${order.lastTransferID}&mode=2`}
-              className="rounded-lg border"
+              className="rounded-lg border w-full"
             />
           </div>
         )}
@@ -169,7 +169,7 @@ export default function OrderPage() {
       Coins Delivered
     </div>
 
-    <div className="text-5xl font-bold text-gray-900 tracking-tight">
+    <div className="text-3xl sm:text-5xl font-bold text-gray-900 tracking-tight">
       {order.alreadyDelivered}K
     </div>
 
