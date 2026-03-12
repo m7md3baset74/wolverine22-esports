@@ -41,6 +41,12 @@ export default function OrderPage() {
     order.economyState === "interrupted" &&
     order.accountCheck === "FailLoggedInConsoleTo";
 
+  // FUT TRANSFER ERRORS
+
+  const isWrongUserPass = order.accountCheck === "wrongUserPass";
+  const isNoTransferMarket = order.accountCheck === "noTM";
+  const isWrongBackup = order.accountCheck === "wrongBA";
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-950/5 to-yellow-700/5 flex flex-col items-center justify-center p-4 sm:p-6 gap-6">
       {/* HEADER CARD */}
@@ -82,6 +88,80 @@ export default function OrderPage() {
         </h1>
 
         {/* ERROR */}
+        {/* FUT ERROR: WRONG EMAIL OR PASSWORD */}
+
+        {isWrongUserPass && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-500/10 border border-red-400/40 rounded-xl p-4 mb-6 backdrop-blur-sm"
+          >
+            <div className="flex items-center gap-2 font-semibold text-red-400 mb-2">
+              ⚠️ Action Required
+            </div>
+
+            <p className="text-sm text-gray-600">
+              Your EA email or password is incorrect. Please verify your
+              credentials and provide the correct login information to continue
+              the transfer.
+            </p>
+          </motion.div>
+        )}
+
+        {/* FUT ERROR: NO TRANSFER MARKET */}
+
+        {isNoTransferMarket && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-yellow-500/10 border border-yellow-400/40 rounded-xl p-4 mb-6 backdrop-blur-sm"
+          >
+            <div className="flex items-center gap-2 font-semibold text-yellow-300 mb-2">
+              ⚠️ Transfer Market Locked
+            </div>
+
+            <p className="text-sm text-gray-500">
+              Your account currently has no access to the EA Transfer Market.
+              This access is required to safely deliver coins.
+            </p>
+
+            <p className="text-sm text-gray-600 mt-2">
+              Please play matches on console until EA unlocks the market or
+              contact support for further assistance.
+            </p>
+          </motion.div>
+        )}
+
+        {/* FUT ERROR: INVALID BACKUP CODES */}
+
+        {isWrongBackup && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-purple-500/10 border border-purple-400/40 rounded-xl p-4 mb-6 backdrop-blur-sm"
+          >
+            <div className="flex items-center gap-2 font-semibold text-purple-300 mb-2">
+              ⚠️ Backup Code Required
+            </div>
+
+            <p className="text-sm text-gray-500">
+              One or more of your EA backup codes are invalid. Please provide
+              valid backup codes from your EA security settings.
+            </p>
+
+            <p className="text-sm text-gray-600 mt-2">
+              You can find your backup codes here:
+            </p>
+
+            <a
+              href="https://myaccount.ea.com/cp-ui/security/index"
+              target="_blank"
+              className="text-blue-400 text-sm underline"
+            >
+              EA Security Settings
+            </a>
+          </motion.div>
+        )}
 
         {showError && (
           <motion.div
@@ -156,54 +236,43 @@ export default function OrderPage() {
 
         {/* COINS DASHBOARD */}
 
-<div className="bg-gray-50 rounded-2xl p-2 my-4 border border-gray-100">
+        <div className="bg-gray-50 rounded-2xl p-2 my-4 border border-gray-100">
+          <div className="flex justify-center mb-4">
+            <div className="w-14 h-14 rounded-full bg-yellow-100 flex items-center justify-center">
+              <Coins size={28} className="text-yellow-600" />
+            </div>
+          </div>
 
-  <div className="flex justify-center mb-4">
-    <div className="w-14 h-14 rounded-full bg-yellow-100 flex items-center justify-center">
-      <Coins size={28} className="text-yellow-600"/>
-    </div>
-  </div>
+          <div className="text-center">
+            <div className="text-sm text-gray-500 mb-1">Coins Delivered</div>
 
-  <div className="text-center">
-    <div className="text-sm text-gray-500 mb-1">
-      Coins Delivered
-    </div>
+            <div className="text-3xl sm:text-5xl font-bold text-gray-900 tracking-tight">
+              {order.alreadyDelivered}K
+            </div>
 
-    <div className="text-3xl sm:text-5xl font-bold text-gray-900 tracking-tight">
-      {order.alreadyDelivered}K
-    </div>
+            <div className="text-gray-400 text-sm mt-1">
+              out of {order.totalAmount}K
+            </div>
+          </div>
 
-    <div className="text-gray-400 text-sm mt-1">
-      out of {order.totalAmount}K
-    </div>
-  </div>
+          {/* small stats */}
 
-  {/* small stats */}
+          <div className="grid grid-cols-2 gap-4 mt-6">
+            <div className="bg-white rounded-xl p-3 text-center border">
+              <div className="text-xs text-gray-500">Delivered</div>
+              <div className="font-bold text-green-600 text-lg">
+                {order.alreadyDelivered}K
+              </div>
+            </div>
 
-  <div className="grid grid-cols-2 gap-4 mt-6">
-
-    <div className="bg-white rounded-xl p-3 text-center border">
-      <div className="text-xs text-gray-500">
-        Delivered
-      </div>
-      <div className="font-bold text-green-600 text-lg">
-        {order.alreadyDelivered}K
-      </div>
-    </div>
-
-    <div className="bg-white rounded-xl p-3 text-center border">
-      <div className="text-xs text-gray-500">
-        Total Order
-      </div>
-      <div className="font-bold text-gray-900 text-lg">
-        {order.totalAmount}K
-      </div>
-    </div>
-
-  </div>
-
-</div>
-
+            <div className="bg-white rounded-xl p-3 text-center border">
+              <div className="text-xs text-gray-500">Total Order</div>
+              <div className="font-bold text-gray-900 text-lg">
+                {order.totalAmount}K
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* PREMIUM PROGRESS */}
 
