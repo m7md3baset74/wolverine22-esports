@@ -22,7 +22,7 @@ export default function OrderPage() {
     if (!code) return;
 
     fetchOrder();
-    const interval = setInterval(fetchOrder, 4000);
+    const interval = setInterval(fetchOrder, 60000);
 
     return () => clearInterval(interval);
   }, [code]);
