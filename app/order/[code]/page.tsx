@@ -22,10 +22,13 @@ export default function OrderPage() {
     if (!code) return;
 
     fetchOrder();
-    const interval = setInterval(fetchOrder, 60000);
+    if (order?.status === "finished") return;
 
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchOrder();
+    }, 60000);
     return () => clearInterval(interval);
-  }, [code]);
+  }, [code, order?.status]);
 
   if (!order)
     return (
