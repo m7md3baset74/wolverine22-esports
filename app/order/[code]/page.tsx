@@ -231,7 +231,7 @@ export default function OrderPage() {
             </div> */}
 
             <img
-              src={`https://futtransfer.top/getScreenshot.php?transferID=${order.lastTransferID}&mode=2`}
+               src={`/api/screenshot?transferID=${order.lastTransferID}`}
               className="rounded-lg border w-full"
             />
           </div>
