@@ -2,135 +2,217 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
-import { motion, useMotionValue, useSpring, animate } from "framer-motion";
-import { CheckCircle, Info, Coins, RotateCw, Zap, Shield, Clock } from "lucide-react";
+import { motion, animate, useInView } from "framer-motion";
+import { CheckCircle, Info, RotateCw, AlertTriangle } from "lucide-react";
 
-// ─── Animated Counter ──────────────────────────────────────────────
+// ─── Animated Number ──────────────────────────────────────────────────────────
 function AnimatedNumber({ value }: { value: number }) {
-  const ref = useRef<HTMLSpanElement>(null);
+  const [display, setDisplay] = useState(0);
   useEffect(() => {
     const controls = animate(0, value, {
-      duration: 1.8,
+      duration: 2.2,
       ease: [0.16, 1, 0.3, 1],
-      onUpdate(v) {
-        if (ref.current) ref.current.textContent = Math.floor(v).toString();
-      },
+      onUpdate: (v) => setDisplay(Math.round(v)),
     });
     return controls.stop;
   }, [value]);
-  return <span ref={ref}>0</span>;
+  return <>{display}</>;
 }
 
-// ─── Floating Particles ────────────────────────────────────────────
-function Particles() {
-  const particles = Array.from({ length: 18 }, (_, i) => i);
+// ─── Three Claw Progress Bars ─────────────────────────────────────────────────
+function ClawProgress({ progress }: { progress: number }) {
+  const offsets = [0, 0.06, 0.12]; // stagger between the 3 claws
+
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {particles.map((i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            width: Math.random() * 4 + 2,
-            height: Math.random() * 4 + 2,
-            background: `rgba(212, 175, 55, ${Math.random() * 0.4 + 0.1})`,
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            opacity: [0.2, 0.8, 0.2],
-            scale: [1, 1.4, 1],
-          }}
-          transition={{
-            duration: Math.random() * 4 + 3,
-            repeat: Infinity,
-            delay: Math.random() * 4,
-            ease: "easeInOut",
-          }}
-        />
+    <div className="flex flex-col gap-2 w-full">
+      {offsets.map((offset, i) => (
+        <div key={i} className="relative w-full flex items-center gap-3">
+          {/* Claw index mark */}
+          <div
+            className="shrink-0 text-[10px] font-black tracking-widest"
+            style={{
+              fontFamily: "'Bebas Neue', sans-serif",
+              color: "rgba(249,115,22,0.35)",
+              width: 12,
+            }}
+          >
+            {["I", "II", "III"][i]}
+          </div>
+
+          {/* Track */}
+          <div
+            className="relative flex-1 rounded-sm overflow-hidden"
+            style={{
+              height: 6 - i * 0.5,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(249,115,22,0.08)",
+            }}
+          >
+            {/* Fill */}
+            <motion.div
+              className="absolute top-0 left-0 h-full rounded-sm"
+              initial={{ width: "0%" }}
+              animate={{ width: `${Math.min(100, progress + offset * 30)}%` }}
+              transition={{
+                duration: 1.8,
+                delay: 0.3 + offset * 2,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              style={{
+                background:
+                  progress > 75
+                    ? "linear-gradient(90deg, #c2410c, #f97316, #fed7aa)"
+                    : progress > 40
+                    ? "linear-gradient(90deg, #92400e, #f59e0b, #fde68a)"
+                    : "linear-gradient(90deg, #78350f, #d97706, #fbbf24)",
+                boxShadow:
+                  progress > 0
+                    ? "0 0 12px rgba(249,115,22,0.6), 0 0 24px rgba(249,115,22,0.2)"
+                    : "none",
+              }}
+            />
+
+            {/* Slash texture overlay */}
+            <div
+              className="absolute inset-0 opacity-20"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(72deg, transparent, transparent 6px, rgba(0,0,0,0.4) 6px, rgba(0,0,0,0.4) 7px)",
+              }}
+            />
+          </div>
+
+          {/* Percent on last bar */}
+          {i === 2 && (
+            <motion.span
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+              className="shrink-0 text-sm font-black"
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                color: "#f97316",
+                letterSpacing: "0.05em",
+                minWidth: 38,
+                textAlign: "right",
+              }}
+            >
+              {progress}%
+            </motion.span>
+          )}
+        </div>
       ))}
     </div>
   );
 }
 
-// ─── Live Pulse ────────────────────────────────────────────────────
-function LivePulse() {
+// ─── Slash Reveal animation variant ──────────────────────────────────────────
+const slashReveal = {
+  hidden: { clipPath: "inset(0 100% 0 0)", opacity: 0 },
+  visible: (delay: number) => ({
+    clipPath: "inset(0 0% 0 0)",
+    opacity: 1,
+    transition: { duration: 0.55, delay, ease: [0.77, 0, 0.18, 1] as const },
+  }),
+};
+
+// ─── Claw Scratch SVG decorative ─────────────────────────────────────────────
+function ClawScratch({
+  x,
+  y,
+  rotate,
+  opacity,
+  scale,
+}: {
+  x: string;
+  y: string;
+  rotate: number;
+  opacity: number;
+  scale: number;
+}) {
   return (
-    <div className="flex items-center gap-2">
-      <div className="relative flex items-center justify-center w-3 h-3">
-        <motion.div
-          className="absolute inset-0 rounded-full bg-emerald-400"
-          animate={{ scale: [1, 2.5], opacity: [0.6, 0] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        />
-        <div className="w-2 h-2 rounded-full bg-emerald-400" />
-      </div>
-      <span className="text-xs font-semibold text-emerald-400 tracking-widest uppercase">Live</span>
-    </div>
+    <svg
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        transform: `rotate(${rotate}deg) scale(${scale})`,
+        opacity,
+        pointerEvents: "none",
+      }}
+      width="120"
+      height="80"
+      viewBox="0 0 120 80"
+      fill="none"
+    >
+      <path d="M10 70 Q30 10 45 5" stroke="rgba(249,115,22,0.6)" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M28 72 Q48 12 63 7" stroke="rgba(249,115,22,0.5)" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M46 74 Q66 14 81 9" stroke="rgba(249,115,22,0.4)" strokeWidth="1" strokeLinecap="round" />
+    </svg>
   );
 }
 
-// ─── Step Timeline ─────────────────────────────────────────────────
-function Timeline({ status, progress }: { status: string; progress: number }) {
-  const steps = [
-    { label: "Order Received", icon: Shield, done: true },
-    { label: "Processing", icon: Zap, done: progress > 0 },
-    { label: "Transferring", icon: Coins, done: progress >= 50 },
-    { label: "Completed", icon: CheckCircle, done: status === "finished" },
-  ];
-
+// ─── Alert Block ──────────────────────────────────────────────────────────────
+function AlertBlock({
+  accent,
+  label,
+  children,
+}: {
+  accent: [number, number, number];
+  label: string;
+  children: React.ReactNode;
+}) {
+  const [r, g, b] = accent;
   return (
-    <div className="relative flex items-center justify-between px-2 py-4">
-      {/* Line */}
-      <div className="absolute top-1/2 left-6 right-6 h-px bg-white/10 -translate-y-1/2" />
-      <motion.div
-        className="absolute top-1/2 left-6 h-px -translate-y-1/2 origin-left"
+    <motion.div
+      initial={{ opacity: 0, x: -16 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.4 }}
+      style={{
+        background: `rgba(${r},${g},${b},0.07)`,
+        border: `1px solid rgba(${r},${g},${b},0.2)`,
+        borderLeft: `3px solid rgba(${r},${g},${b},0.7)`,
+        borderRadius: 8,
+        padding: "12px 16px",
+        marginBottom: 14,
+      }}
+    >
+      <div
         style={{
-          background: "linear-gradient(90deg, #d4af37, #f5d020)",
-          boxShadow: "0 0 8px rgba(212,175,55,0.6)",
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: 12,
+          letterSpacing: "0.2em",
+          color: `rgba(${r},${g},${b},0.9)`,
+          marginBottom: 6,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
         }}
-        initial={{ width: "0%" }}
-        animate={{ width: `${Math.min(progress, 100)}%` }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
-      />
-      {steps.map((step, i) => {
-        const Icon = step.icon;
-        return (
-          <motion.div
-            key={i}
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: i * 0.15 + 0.3 }}
-            className="relative flex flex-col items-center gap-2 z-10"
-          >
-            <div
-              className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-500 ${
-                step.done
-                  ? "bg-gradient-to-br from-amber-400 to-yellow-600 border-amber-400 shadow-[0_0_14px_rgba(212,175,55,0.6)]"
-                  : "bg-[#1a1a2e] border-white/10"
-              }`}
-            >
-              <Icon size={15} className={step.done ? "text-[#0f0f1a]" : "text-white/30"} />
-            </div>
-            <span className={`text-[10px] font-semibold tracking-wide text-center leading-tight ${step.done ? "text-amber-400" : "text-white/20"}`}>
-              {step.label}
-            </span>
-          </motion.div>
-        );
-      })}
-    </div>
+      >
+        <AlertTriangle size={12} />
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: "'Barlow', sans-serif",
+          fontSize: 12,
+          fontWeight: 300,
+          color: "rgba(255,255,255,0.45)",
+          lineHeight: 1.65,
+        }}
+      >
+        {children}
+      </div>
+    </motion.div>
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function OrderPage() {
   const params = useParams();
   const code = params.code as string;
-
   const [showError, setShowError] = useState(false);
   const [order, setOrder] = useState<any>(null);
-  const [mounted, setMounted] = useState(false);
 
   const fetchOrder = async () => {
     const res = await fetch(`/api/order?code=${code}`);
@@ -139,343 +221,686 @@ export default function OrderPage() {
   };
 
   useEffect(() => {
-    setMounted(true);
     if (!code) return;
     fetchOrder();
+    if (order?.status === "finished") return;
     const interval = setInterval(() => {
-      if (!document.hidden && order?.status !== "finished") fetchOrder();
+      if (!document.hidden) fetchOrder();
     }, 60000);
     return () => clearInterval(interval);
-  }, [code]);
+  }, [code, order?.status]);
 
-  if (!order || !mounted)
+  // ── Loading ──
+  if (!order)
     return (
-      <div className="flex items-center justify-center h-screen" style={{ background: "#0f0f1a" }}>
-        <div className="flex flex-col items-center gap-4">
-          <motion.div
-            className="w-14 h-14 rounded-full border-2 border-amber-400/30 border-t-amber-400"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          />
-          <p className="text-white/40 text-sm tracking-widest uppercase font-semibold">Loading Order</p>
-        </div>
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#0a0a0a",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 16,
+        }}
+      >
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;600&display=swap');`}</style>
+        <motion.div
+          animate={{ scaleX: [0.6, 1, 0.6], opacity: [0.3, 1, 0.3] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          style={{
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 48,
+            color: "#f97316",
+            letterSpacing: "0.1em",
+          }}
+        >
+          WOLVERINE_22
+        </motion.div>
+        <div
+          style={{
+            width: 120,
+            height: 2,
+            background: "linear-gradient(90deg,transparent,#f97316,transparent)",
+          }}
+        />
       </div>
     );
 
   const progress = Number(order.percentDelivered);
   const isFinished = order.status === "finished";
-  const isActionRequired = order.economyState === "interrupted" && order.accountCheck === "FailLoggedInConsoleTo";
+  const isActionRequired =
+    order.economyState === "interrupted" &&
+    order.accountCheck === "FailLoggedInConsoleTo";
   const isWrongUserPass = order.accountCheck === "wrongUserPass";
   const isNoTransferMarket = order.accountCheck === "noTM";
   const isWrongBackup = order.accountCheck === "wrongBA";
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-start p-4 sm:p-6 gap-5 pb-12 relative"
-      style={{
-        background: "radial-gradient(ellipse at 30% 0%, #1c1830 0%, #0f0f1a 55%, #0a0a14 100%)",
-        fontFamily: "'DM Sans', sans-serif",
-      }}
-    >
-      {/* Google Fonts */}
+    <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap');
-        * { box-sizing: border-box; }
-        body { margin: 0; }
-        .gold-text {
-          background: linear-gradient(135deg, #d4af37 0%, #f5d020 50%, #d4af37 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:ital,wght@0,400;0,700;0,900;1,700&family=Barlow:wght@300;400;500;600&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0a0a0a; }
+
+        .wlv-page {
+          min-height: 100vh;
+          background:
+            radial-gradient(ellipse 80% 40% at 50% 0%, rgba(249,115,22,0.07) 0%, transparent 55%),
+            radial-gradient(ellipse 50% 50% at 5% 80%, rgba(249,115,22,0.04) 0%, transparent 50%),
+            radial-gradient(ellipse 50% 50% at 95% 20%, rgba(249,115,22,0.03) 0%, transparent 50%),
+            #0a0a0a;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 24px 16px;
+          gap: 0;
+          position: relative;
+          overflow: hidden;
         }
-        .glass {
-          background: rgba(255,255,255,0.035);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255,255,255,0.07);
+
+        /* Noise grain */
+        .wlv-page::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+          opacity: 0.5;
+          pointer-events: none;
+          z-index: 0;
         }
-        .glass-warm {
-          background: rgba(212,175,55,0.05);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(212,175,55,0.12);
+
+        .wlv-card {
+          width: 100%;
+          max-width: 500px;
+          position: relative;
+          z-index: 10;
+          background:
+            linear-gradient(145deg, rgba(249,115,22,0.06) 0%, rgba(249,115,22,0.01) 20%, rgba(12,12,12,0.98) 45%),
+            #0e0e0e;
+          border: 1px solid rgba(249,115,22,0.12);
+          border-radius: 4px 20px 20px 4px;
+          overflow: hidden;
+          box-shadow:
+            0 0 0 1px rgba(249,115,22,0.04),
+            0 40px 100px rgba(0,0,0,0.9),
+            0 0 80px rgba(249,115,22,0.04),
+            inset 0 1px 0 rgba(249,115,22,0.08);
+        }
+
+        /* Left orange accent bar */
+        .wlv-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; bottom: 0;
+          width: 3px;
+          background: linear-gradient(180deg, #f97316 0%, rgba(249,115,22,0.3) 60%, transparent 100%);
+          z-index: 20;
+        }
+
+        .wlv-inner {
+          padding: 24px 24px 20px 28px;
+        }
+
+        .orange-rule {
+          height: 1px;
+          background: linear-gradient(90deg, rgba(249,115,22,0.6) 0%, rgba(249,115,22,0.15) 60%, transparent 100%);
+          margin: 0 0 0 -28px;
+          width: calc(100% + 28px);
+        }
+
+        .stat-cell {
+          background: rgba(255,255,255,0.02);
+          border: 1px solid rgba(249,115,22,0.08);
+          border-radius: 6px;
+          padding: 12px 14px;
+        }
+
+        .wlv-label {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: 9px;
+          letter-spacing: 0.3em;
+          color: rgba(249,115,22,0.35);
+          text-transform: uppercase;
+        }
+
+        .wlv-body {
+          font-family: 'Barlow', sans-serif;
+          font-size: 13px;
+          font-weight: 300;
+          color: rgba(255,255,255,0.45);
+          line-height: 1.65;
+        }
+
+        .notice-block {
+          background: rgba(255,255,255,0.018);
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 6px;
+          padding: 12px 14px;
+          display: flex;
+          gap: 10px;
+          align-items: flex-start;
+          margin-bottom: 16px;
         }
       `}</style>
 
-      {/* Ambient glow top */}
-      <div className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px]"
-        style={{ background: "radial-gradient(ellipse, rgba(212,175,55,0.07) 0%, transparent 70%)" }}
-      />
+      <div className="wlv-page">
 
-      {/* ── HEADER ── */}
-      <motion.div
-        initial={{ opacity: 0, y: -24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-[500px] glass-warm rounded-2xl p-4 flex items-center gap-4 relative overflow-hidden mt-4"
-      >
-        <Particles />
-        <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border border-amber-400/20"
-          style={{ background: "rgba(212,175,55,0.08)" }}>
-          <img src="/generated-image.png" className="w-full h-full object-contain p-1.5" />
-        </div>
-        <div className="flex-1">
-          <div className="text-white font-semibold text-base" style={{ fontFamily: "'Sora', sans-serif" }}>
-            WOLVERINE_22
-          </div>
-          <div className="text-white/40 text-xs tracking-wide">Transfer Service</div>
-        </div>
-        <LivePulse />
-      </motion.div>
+        {/* Decorative claw scratches in background */}
+        <ClawScratch x="-40px" y="10%" rotate={15} opacity={0.25} scale={1.8} />
+        <ClawScratch x="75%" y="60%" rotate={-20} opacity={0.15} scale={2.2} />
+        <ClawScratch x="60%" y="5%" rotate={5} opacity={0.12} scale={1.4} />
 
-      {/* ── MAIN CARD ── */}
-      <motion.div
-        initial={{ opacity: 0, y: 32 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-        className="w-full max-w-[500px] glass rounded-2xl overflow-hidden relative"
-      >
-        {/* Top gradient stripe */}
-        <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(212,175,55,0.6), transparent)" }} />
-
-        <div className="p-6 sm:p-8">
-
-          {/* Title */}
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-xl font-bold text-white" style={{ fontFamily: "'Sora', sans-serif" }}>
-              Order <span className="gold-text">Status</span>
-            </h1>
-            <div className="text-xs text-white/25 font-mono">#{code?.slice(0, 8)?.toUpperCase()}</div>
-          </div>
-
-          {/* ── ERROR BANNERS ── */}
-          {isWrongUserPass && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl p-4 mb-6 border border-red-500/20"
-              style={{ background: "rgba(239,68,68,0.07)" }}>
-              <div className="flex items-center gap-2 text-red-400 font-semibold text-sm mb-1">⚠️ Action Required</div>
-              <p className="text-white/50 text-xs leading-relaxed">Your EA email or password is incorrect. Please verify your credentials to continue the transfer.</p>
-            </motion.div>
-          )}
-
-          {isNoTransferMarket && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl p-4 mb-6 border border-amber-400/20"
-              style={{ background: "rgba(212,175,55,0.06)" }}>
-              <div className="flex items-center gap-2 text-amber-400 font-semibold text-sm mb-1">⚠️ Transfer Market Locked</div>
-              <p className="text-white/50 text-xs leading-relaxed">Your account has no access to the EA Transfer Market. Please play matches on console until EA unlocks it.</p>
-            </motion.div>
-          )}
-
-          {isWrongBackup && (
-            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-              className="rounded-xl p-4 mb-6 border border-violet-400/20"
-              style={{ background: "rgba(139,92,246,0.07)" }}>
-              <div className="flex items-center gap-2 text-violet-400 font-semibold text-sm mb-1">⚠️ Backup Code Required</div>
-              <p className="text-white/50 text-xs leading-relaxed mb-2">One or more of your EA backup codes are invalid.</p>
-              <a href="https://myaccount.ea.com/cp-ui/security/index" target="_blank"
-                className="text-xs text-amber-400 hover:text-amber-300 underline underline-offset-2 transition-colors">
-                EA Security Settings →
-              </a>
-            </motion.div>
-          )}
-
-          {showError && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="rounded-xl p-3 mb-4 border border-red-500/20 text-center text-xs text-red-400"
-              style={{ background: "rgba(239,68,68,0.07)" }}>
-              Unknown error. Contact support with your transfer ID.
-            </motion.div>
-          )}
-
-          {/* ── INFO ── */}
-          {!isFinished && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
-              className="rounded-xl p-4 mb-6 border border-blue-400/10"
-              style={{ background: "rgba(96,165,250,0.05)" }}>
-              <div className="flex items-center gap-2 text-blue-400 font-semibold text-sm mb-1">
-                <Info size={14} /> Order Information
-              </div>
-              <p className="text-white/40 text-xs leading-relaxed">
-                Stay logged out from console, web and mobile app during the transfer to avoid interruptions.
-              </p>
-            </motion.div>
-          )}
-
-          {/* ── COMPLETED ── */}
-          {isFinished && (
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              className="rounded-xl p-4 mb-6 border border-emerald-400/20"
-              style={{ background: "rgba(52,211,153,0.06)" }}>
-              <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm mb-1">
-                <CheckCircle size={14} /> Order Completed!
-              </div>
-              <p className="text-white/40 text-xs leading-relaxed">
-                30-minute cooldown before using the web app again. Or login on console and log out. Thank you!
-              </p>
-            </motion.div>
-          )}
-
-          {/* ── SCREENSHOT ── */}
-          {order.lastTransferID && (
-            <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.4 }}
-              className="mb-6 rounded-xl overflow-hidden border border-white/8 hover:border-amber-400/20 transition-colors cursor-pointer group">
-              <img src={`/api/screenshot?transferID=${order.lastTransferID}`}
-                className="w-full group-hover:scale-[1.01] transition-transform duration-500" />
-            </motion.div>
-          )}
-
-          {/* ── COINS DASHBOARD ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-            className="rounded-2xl p-5 mb-5 relative overflow-hidden"
+        {/* ── HEADER ── */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            width: "100%",
+            maxWidth: 500,
+            position: "relative",
+            zIndex: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            marginBottom: 12,
+            padding: "0 4px",
+          }}
+        >
+          {/* Logo image with claw-frame border */}
+          <div
             style={{
-              background: "linear-gradient(135deg, rgba(212,175,55,0.08) 0%, rgba(245,208,32,0.04) 100%)",
-              border: "1px solid rgba(212,175,55,0.15)",
+              position: "relative",
+              flexShrink: 0,
             }}
           >
-            {/* Glow orb */}
-            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full pointer-events-none"
-              style={{ background: "radial-gradient(circle, rgba(212,175,55,0.12) 0%, transparent 70%)" }} />
-
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <div className="text-white/40 text-xs tracking-widest uppercase mb-1">Coins Delivered</div>
-                <div className="text-4xl sm:text-5xl font-bold gold-text" style={{ fontFamily: "'Sora', sans-serif" }}>
-                  <AnimatedNumber value={order.alreadyDelivered} />
-                  <span className="text-2xl ml-1">K</span>
-                </div>
-                <div className="text-white/30 text-xs mt-1">of {order.totalAmount}K total</div>
-              </div>
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ background: "rgba(212,175,55,0.12)", border: "1px solid rgba(212,175,55,0.2)" }}>
-                <Coins size={22} className="text-amber-400" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: "Delivered", value: `${order.alreadyDelivered}K`, color: "text-emerald-400" },
-                { label: "Remaining", value: `${order.totalAmount - order.alreadyDelivered}K`, color: "text-amber-400" },
-              ].map((stat) => (
-                <div key={stat.label} className="rounded-xl p-3"
-                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                  <div className="text-white/30 text-[10px] uppercase tracking-widest mb-1">{stat.label}</div>
-                  <div className={`text-lg font-bold ${stat.color}`} style={{ fontFamily: "'Sora', sans-serif" }}>
-                    {stat.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* ── PROGRESS BAR ── */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.45 }}
-            className="mb-6"
-          >
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-white/40 text-xs tracking-wide uppercase">Transfer Progress</span>
-              <motion.span
-                className="text-sm font-bold gold-text"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.7 }}
-              >
-                {progress}%
-              </motion.span>
-            </div>
-
-            <div className="relative w-full h-2.5 rounded-full overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.06)" }}>
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 1.6, ease: [0.16, 1, 0.3, 1], delay: 0.5 }}
-                className="absolute left-0 top-0 h-full rounded-full"
-                style={{
-                  background: "linear-gradient(90deg, #d4af37, #f5d020, #ffe066)",
-                  boxShadow: "0 0 16px rgba(212,175,55,0.7), 0 0 4px rgba(212,175,55,0.4)",
-                }}
-              />
-              {/* shimmer */}
-              <motion.div
-                className="absolute top-0 h-full w-16 rounded-full"
-                style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)" }}
-                animate={{ left: ["-10%", "110%"] }}
-                transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 1.5, ease: "easeInOut" }}
-              />
-            </div>
-          </motion.div>
-
-          {/* ── TIMELINE ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="rounded-2xl p-4 mb-5"
-            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)" }}
-          >
-            <div className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Transfer Timeline</div>
-            <Timeline status={order.status} progress={progress} />
-          </motion.div>
-
-          {/* ── ACTION REQUIRED ── */}
-          {isActionRequired && (
-            <motion.div initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              className="rounded-xl p-4 mb-5 border border-amber-400/20"
-              style={{ background: "rgba(212,175,55,0.06)" }}>
-              <div className="text-amber-400 font-semibold text-sm mb-1">⚠️ Action Required</div>
-              <p className="text-white/50 text-xs mb-3 leading-relaxed">
-                You are logged in on the EA webapp. Please log out and try again.
-              </p>
-              <button
-                onClick={() => { setShowError(true); setTimeout(() => setShowError(false), 3000); }}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold text-[#0f0f1a] flex items-center justify-center gap-2 transition-all hover:brightness-110 active:scale-95"
-                style={{ background: "linear-gradient(135deg, #d4af37, #f5d020)" }}
-              >
-                <RotateCw size={15} /> Resume Transfer
-              </button>
-            </motion.div>
-          )}
-
-          {/* ── STATUS BADGE ── */}
-          {!showError && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="flex justify-center">
-              <div className="flex items-center gap-2 px-4 py-2 rounded-full"
-                style={{
-                  background: isFinished ? "rgba(52,211,153,0.1)" : "rgba(212,175,55,0.08)",
-                  border: `1px solid ${isFinished ? "rgba(52,211,153,0.25)" : "rgba(212,175,55,0.2)"}`,
-                }}>
-                <motion.div
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{ background: isFinished ? "#34d399" : "#d4af37" }}
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                />
-                <span className={`text-xs font-semibold capitalize tracking-wide ${isFinished ? "text-emerald-400" : "text-amber-400"}`}>
-                  {order.status}
-                </span>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── LAST ACTIVITY ── */}
-          <div className="flex items-center justify-center gap-1.5 mt-5">
-            <Clock size={10} className="text-white/20" />
-            <span className="text-[10px] text-white/25 font-mono">{order.lastActivity}</span>
+            {/* Corner slashes */}
+            <div style={{ position: "absolute", top: -4, left: -4, width: 14, height: 14, borderTop: "2px solid #f97316", borderLeft: "2px solid #f97316", borderRadius: "2px 0 0 0" }} />
+            <div style={{ position: "absolute", bottom: -4, right: -4, width: 14, height: 14, borderBottom: "2px solid #f97316", borderRight: "2px solid #f97316", borderRadius: "0 0 2px 0" }} />
+            <img
+              src="/generated-image.png"
+              style={{
+                width: 60,
+                height: 60,
+                objectFit: "contain",
+                borderRadius: 6,
+                border: "1px solid rgba(249,115,22,0.2)",
+                background: "rgba(249,115,22,0.05)",
+                padding: 4,
+                filter: "drop-shadow(0 0 10px rgba(249,115,22,0.25))",
+              }}
+            />
           </div>
 
-        </div>
+          {/* Name + subtitle */}
+          <div>
+            <motion.h1
+              custom={0}
+              variants={slashReveal}
+              initial="hidden"
+              animate="visible"
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 30,
+                letterSpacing: "0.08em",
+                color: "#f5f5f5",
+                lineHeight: 1,
+                marginBottom: 4,
+              }}
+            >
+              WOLVERINE
+              <span style={{ color: "#f97316", marginLeft: 6 }}>_22</span>
+            </motion.h1>
+            <motion.p
+              custom={0.15}
+              variants={slashReveal}
+              initial="hidden"
+              animate="visible"
+              style={{
+                fontFamily: "'Barlow', sans-serif",
+                fontSize: 11,
+                fontWeight: 400,
+                color: "rgba(249,115,22,0.4)",
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+              }}
+            >
+              Transfer Service
+            </motion.p>
+          </div>
 
-        {/* Bottom gradient stripe */}
-        <div className="h-px w-full" style={{ background: "linear-gradient(90deg, transparent, rgba(212,175,55,0.2), transparent)" }} />
-      </motion.div>
-    </div>
+          {/* Status pill */}
+          <motion.div
+            animate={!isFinished ? { opacity: [0.5, 1, 0.5] } : {}}
+            transition={{ duration: 2.5, repeat: Infinity }}
+            style={{
+              marginLeft: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 12px",
+              borderRadius: 4,
+              background: isFinished ? "rgba(34,197,94,0.07)" : "rgba(249,115,22,0.07)",
+              border: `1px solid ${isFinished ? "rgba(34,197,94,0.2)" : "rgba(249,115,22,0.2)"}`,
+            }}
+          >
+            <div
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: "50%",
+                background: isFinished ? "#22c55e" : "#f97316",
+                boxShadow: `0 0 8px ${isFinished ? "#22c55e" : "#f97316"}`,
+              }}
+            />
+            <span
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: 10,
+                letterSpacing: "0.2em",
+                color: isFinished ? "rgba(34,197,94,0.8)" : "rgba(249,115,22,0.8)",
+                textTransform: "uppercase",
+              }}
+            >
+              {isFinished ? "Done" : "Live"}
+            </span>
+          </motion.div>
+        </motion.div>
+
+        {/* ── MAIN CARD ── */}
+        <motion.div
+          className="wlv-card"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {/* Top orange rule */}
+          <div className="orange-rule" />
+
+          <div className="wlv-inner">
+
+            {/* Card title */}
+            <motion.div
+              custom={0.2}
+              variants={slashReveal}
+              initial="hidden"
+              animate="visible"
+              style={{ marginBottom: 20 }}
+            >
+              <div className="wlv-label" style={{ marginBottom: 4 }}>Order Status</div>
+              <h2
+                style={{
+                  fontFamily: "'Barlow Condensed', sans-serif",
+                  fontWeight: 900,
+                  fontStyle: "italic",
+                  fontSize: 32,
+                  color: "#f5f5f5",
+                  letterSpacing: "0.02em",
+                  lineHeight: 1,
+                }}
+              >
+                Transfer
+                <span style={{ color: "#f97316", marginLeft: 8 }}>Tracker</span>
+              </h2>
+            </motion.div>
+
+            {/* ── ALERTS ── */}
+            {isWrongUserPass && (
+              <AlertBlock accent={[239, 68, 68]} label="Credentials Invalid">
+                Your EA email or password is incorrect. Please verify your credentials and provide the correct login information to continue.
+              </AlertBlock>
+            )}
+            {isNoTransferMarket && (
+              <AlertBlock accent={[249, 115, 22]} label="Transfer Market Locked">
+                Your account has no Transfer Market access. Play matches on console until EA unlocks it, or contact support.
+              </AlertBlock>
+            )}
+            {isWrongBackup && (
+              <AlertBlock accent={[167, 139, 250]} label="Backup Code Required">
+                One or more EA backup codes are invalid.{" "}
+                <a
+                  href="https://myaccount.ea.com/cp-ui/security/index"
+                  target="_blank"
+                  style={{ color: "rgba(167,139,250,0.8)", textDecoration: "underline", textUnderlineOffset: 3 }}
+                >
+                  EA Security Settings →
+                </a>
+              </AlertBlock>
+            )}
+            {showError && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{
+                  background: "rgba(239,68,68,0.06)",
+                  border: "1px solid rgba(239,68,68,0.15)",
+                  borderRadius: 6,
+                  padding: "10px 14px",
+                  marginBottom: 14,
+                  textAlign: "center",
+                  fontFamily: "'Barlow',sans-serif",
+                  fontSize: 12,
+                  color: "rgba(239,68,68,0.7)",
+                }}
+              >
+                Unknown error — contact support with your transfer ID.
+              </motion.div>
+            )}
+
+            {/* ── NOTICES ── */}
+            {!isFinished && (
+              <motion.div
+                className="notice-block"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <Info size={13} style={{ color: "rgba(249,115,22,0.4)", flexShrink: 0, marginTop: 2 }} />
+                <p className="wlv-body" style={{ fontSize: 12 }}>
+                  Stay logged out on console, web app, and mobile for the full duration of the transfer.
+                </p>
+              </motion.div>
+            )}
+            {isFinished && (
+              <motion.div
+                className="notice-block"
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                style={{
+                  background: "rgba(34,197,94,0.04)",
+                  border: "1px solid rgba(34,197,94,0.12)",
+                }}
+              >
+                <CheckCircle size={13} style={{ color: "rgba(34,197,94,0.6)", flexShrink: 0, marginTop: 2 }} />
+                <p className="wlv-body" style={{ fontSize: 12 }}>
+                  Transfer complete. Allow 30 minutes before resuming web app activity.
+                </p>
+              </motion.div>
+            )}
+
+            {/* ── COINS ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
+              <div className="stat-cell">
+                <div className="wlv-label" style={{ marginBottom: 8 }}>Delivered</div>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 3, lineHeight: 1 }}>
+                  <span
+                    style={{
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontSize: 44,
+                      color: "#f97316",
+                      lineHeight: 1,
+                      filter: "drop-shadow(0 0 12px rgba(249,115,22,0.5))",
+                    }}
+                  >
+                    <AnimatedNumber value={order.alreadyDelivered} />
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontSize: 22,
+                      color: "rgba(249,115,22,0.5)",
+                      marginBottom: 5,
+                    }}
+                  >
+                    K
+                  </span>
+                </div>
+              </div>
+
+              <div className="stat-cell">
+                <div className="wlv-label" style={{ marginBottom: 8 }}>Total Order</div>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 3, lineHeight: 1 }}>
+                  <span
+                    style={{
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontSize: 44,
+                      color: "rgba(255,255,255,0.3)",
+                      lineHeight: 1,
+                    }}
+                  >
+                    {order.totalAmount}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "'Bebas Neue', sans-serif",
+                      fontSize: 22,
+                      color: "rgba(255,255,255,0.15)",
+                      marginBottom: 5,
+                    }}
+                  >
+                    K
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Divider with claw marks */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 18,
+              }}
+            >
+              <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, rgba(249,115,22,0.3), transparent)" }} />
+              <div style={{ display: "flex", gap: 3 }}>
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    style={{
+                      width: 2,
+                      height: 10,
+                      background: "rgba(249,115,22,0.4)",
+                      borderRadius: 1,
+                      transform: `rotate(${[-8, 0, 8][i]}deg)`,
+                    }}
+                  />
+                ))}
+              </div>
+              <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, transparent, rgba(249,115,22,0.3))" }} />
+            </div>
+
+            {/* ── THREE CLAW PROGRESS ── */}
+            <div style={{ marginBottom: 20 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 12,
+                }}
+              >
+                <div className="wlv-label">Transfer Progress</div>
+              </div>
+              <ClawProgress progress={progress} />
+            </div>
+
+            {/* ── SCREENSHOT ── */}
+            {order.lastTransferID && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                style={{
+                  borderRadius: 6,
+                  border: "1px solid rgba(249,115,22,0.1)",
+                  overflow: "hidden",
+                  marginBottom: 16,
+                }}
+                whileHover={{ scale: 1.005 }}
+              >
+                <div
+                  style={{
+                    padding: "7px 14px",
+                    borderBottom: "1px solid rgba(249,115,22,0.07)",
+                  }}
+                >
+                  <span className="wlv-label">Last Transfer Proof</span>
+                </div>
+                <img
+                  src={`/api/screenshot?transferID=${order.lastTransferID}`}
+                  style={{ width: "100%", display: "block" }}
+                />
+              </motion.div>
+            )}
+
+            {/* ── FINISHED ── */}
+            {isFinished && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={{
+                  background: "rgba(249,115,22,0.04)",
+                  border: "1px solid rgba(249,115,22,0.12)",
+                  borderRadius: 6,
+                  padding: "14px 16px",
+                  marginBottom: 14,
+                  textAlign: "center",
+                }}
+              >
+                <div className="wlv-label" style={{ marginBottom: 6 }}>Final Result</div>
+                <div
+                  style={{
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: 24,
+                    color: "#f97316",
+                    letterSpacing: "0.06em",
+                  }}
+                >
+                  {order.alreadyDelivered}K / {order.totalAmount}K — {progress}%
+                </div>
+              </motion.div>
+            )}
+
+            {/* ── ACTION REQUIRED ── */}
+            {isActionRequired && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                  background: "rgba(249,115,22,0.05)",
+                  border: "1px solid rgba(249,115,22,0.15)",
+                  borderRadius: 6,
+                  padding: "14px 16px",
+                  marginBottom: 14,
+                }}
+              >
+                <div className="wlv-label" style={{ color: "rgba(249,115,22,0.7)", marginBottom: 8 }}>
+                  ⚠ Action Required
+                </div>
+                <p className="wlv-body" style={{ fontSize: 12, marginBottom: 14 }}>
+                  You are logged in on the EA webapp. Please log out to resume the transfer.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowError(true);
+                    setTimeout(() => setShowError(false), 3000);
+                  }}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    padding: "10px 16px",
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    background: "rgba(249,115,22,0.1)",
+                    border: "1px solid rgba(249,115,22,0.25)",
+                    color: "#f97316",
+                    fontFamily: "'Bebas Neue', sans-serif",
+                    fontSize: 13,
+                    letterSpacing: "0.18em",
+                    transition: "opacity 0.2s",
+                  }}
+                  onMouseOver={(e) => (e.currentTarget.style.opacity = "0.7")}
+                  onMouseOut={(e) => (e.currentTarget.style.opacity = "1")}
+                >
+                  <RotateCw size={13} />
+                  Resume Transfer
+                </button>
+              </motion.div>
+            )}
+
+          </div>
+
+          {/* ── BOTTOM BAR ── */}
+          <div
+            style={{
+              padding: "10px 28px",
+              borderTop: "1px solid rgba(249,115,22,0.07)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <motion.div
+                animate={!isFinished ? { opacity: [0.3, 1, 0.3] } : {}}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: isFinished ? "#22c55e" : "#f97316",
+                  boxShadow: `0 0 8px ${isFinished ? "#22c55e" : "#f97316"}`,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 11,
+                  letterSpacing: "0.2em",
+                  color: isFinished ? "rgba(34,197,94,0.7)" : "rgba(249,115,22,0.7)",
+                  textTransform: "uppercase",
+                }}
+              >
+                {order.status}
+              </span>
+            </div>
+            <span
+              style={{
+                fontFamily: "'Barlow', sans-serif",
+                fontSize: 10,
+                color: "rgba(255,255,255,0.18)",
+              }}
+            >
+              {order.lastActivity}
+            </span>
+          </div>
+
+          {/* Bottom orange rule */}
+          <div
+            style={{
+              height: 2,
+              background:
+                "linear-gradient(90deg, #f97316 0%, rgba(249,115,22,0.4) 50%, transparent 100%)",
+            }}
+          />
+        </motion.div>
+
+        {/* Footer */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.4 }}
+          style={{
+            position: "relative",
+            zIndex: 10,
+            fontFamily: "'Bebas Neue', sans-serif",
+            fontSize: 9,
+            letterSpacing: "0.35em",
+            color: "rgba(249,115,22,0.2)",
+            marginTop: 14,
+            paddingBottom: 8,
+          }}
+        >
+          WOLVERINE_22 — TRANSFER SYSTEM
+        </motion.p>
+      </div>
+    </>
   );
 }
