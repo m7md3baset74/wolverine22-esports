@@ -30,7 +30,7 @@ export async function GET(req: Request) {
       headers: {
         "Content-Type": imageRes.headers.get("content-type") || "image/jpeg",
 
-        // مهم جدًا
+        
         "Cache-Control": "no-store",
       },
     });
