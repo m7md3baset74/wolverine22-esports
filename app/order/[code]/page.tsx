@@ -163,7 +163,7 @@ const slashReveal = {
   visible: (delay: number) => ({
     clipPath: "inset(0 0% 0 0)",
     opacity: 1,
-    transition: { duration: 0.55, delay, ease: [0.77, 0, 0.18, 1] },
+    transition: { duration: 0.55, delay, ease: [0.77, 0, 0.18, 1] as const },
   }),
 };
 
