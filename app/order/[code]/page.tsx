@@ -19,89 +19,140 @@ function AnimatedNumber({ value }: { value: number }) {
   return <>{display}</>;
 }
 
-// ─── Three Claw Progress Bars ─────────────────────────────────────────────────
+// ─── Realistic Claw Scratch Progress ─────────────────────────────────────────
+// Each scratch is a closed jagged shape (top edge + bottom edge) like real claw marks
+// Top edge: jagged/torn upward; Bottom edge: jagged/torn downward → filled dark with orange stroke
 function ClawProgress({ progress }: { progress: number }) {
-  const offsets = [0, 0.06, 0.12]; // stagger between the 3 claws
+  // 3 scratch shapes — diagonal, jagged, different widths
+  // Each path is a closed polygon simulating a torn slash
+  // Points go left→right on top, then right→left on bottom
+  const scratches: { top: string; bot: string; fill: string; stroke: string; strokeW: number; delay: number; yShift: number }[] = [
+    {
+      // Scratch 1 — thickest, top
+      top: "M2,10 L8,4 L18,8 L30,2 L45,7 L58,1 L72,6 L85,0 L100,5 L115,1 L130,6 L145,2 L160,7 L175,2 L190,6 L205,1 L220,5 L235,1 L250,4 L265,0 L278,4 L290,1 L300,3",
+      bot: "M300,11 L290,16 L278,12 L265,17 L250,13 L235,17 L220,13 L205,17 L190,12 L175,16 L160,12 L145,16 L130,13 L115,17 L100,13 L85,17 L72,12 L58,16 L45,13 L30,16 L18,13 L8,17 L2,13 Z",
+      fill: "rgba(100,8,0,0.85)",
+      stroke: "#f97356",
+      strokeW: 1.2,
+      delay: 0.15,
+      yShift: 0,
+    },
+    {
+      // Scratch 2 — medium
+      top: "M2,34 L10,28 L22,32 L36,26 L50,31 L65,25 L80,30 L95,24 L112,29 L128,24 L144,29 L160,24 L176,28 L192,23 L208,28 L224,23 L240,27 L256,22 L272,26 L285,22 L295,25 L300,23",
+      bot: "M300,39 L295,43 L285,39 L272,43 L256,39 L240,43 L224,39 L208,43 L192,38 L176,42 L160,38 L144,42 L128,38 L112,42 L95,38 L80,42 L65,38 L50,42 L36,38 L22,42 L10,38 L2,42 Z",
+      fill: "rgba(100,8,0,0.8)",
+      stroke: "#fb926c",
+      strokeW: 1,
+      delay: 0.35,
+      yShift: 0,
+    },
+    {
+      // Scratch 3 — thinnest, bottom
+      top: "M2,56 L12,51 L26,55 L42,49 L58,54 L75,48 L92,53 L110,47 L128,52 L146,47 L164,51 L182,46 L200,51 L218,46 L236,50 L254,46 L270,49 L283,46 L293,48 L300,47",
+      bot: "M300,59 L293,62 L283,59 L270,62 L254,59 L236,62 L218,59 L200,62 L182,58 L164,62 L146,58 L128,61 L110,58 L92,61 L75,58 L58,61 L42,58 L26,61 L12,58 L2,61 Z",
+      fill: "rgba(100,8,0,0.75)",
+      stroke: "#fdba94",
+      strokeW: 0.8,
+      delay: 0.55,
+      yShift: 0,
+    },
+  ];
+
+  // We clip the entire SVG to progress% width using a clipPath rect
+  const clipId = "clawClip";
 
   return (
-    <div className="flex flex-col gap-2 w-full">
-      {offsets.map((offset, i) => (
-        <div key={i} className="relative w-full flex items-center gap-3">
-          {/* Claw index mark */}
-          <div
-            className="shrink-0 text-[10px] font-black tracking-widest"
-            style={{
-              fontFamily: "'Bebas Neue', sans-serif",
-              color: "rgba(249,115,22,0.35)",
-              width: 12,
-            }}
-          >
-            {["I", "II", "III"][i]}
-          </div>
+    <div style={{ width: "100%" }}>
+      {/* Label + big % */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 10 }}>
+        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 11, letterSpacing: "0.25em", color: "rgba(249,115,22,0.7)" }}>
+          TRANSFER PROGRESS
+        </span>
+        <motion.span
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 44, lineHeight: 1, color: "#f97316", filter: "drop-shadow(0 0 16px rgba(249,115,22,0.6))", letterSpacing: "0.02em" }}
+        >
+          {progress}<span style={{ fontSize: 22, opacity: 0.55 }}>%</span>
+        </motion.span>
+      </div>
 
-          {/* Track */}
-          <div
-            className="relative flex-1 rounded-sm overflow-hidden"
-            style={{
-              height: 6 - i * 0.5,
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(249,115,22,0.08)",
-            }}
-          >
-            {/* Fill */}
-            <motion.div
-              className="absolute top-0 left-0 h-full rounded-sm"
-              initial={{ width: "0%" }}
-              animate={{ width: `${Math.min(100, progress + offset * 30)}%` }}
-              transition={{
-                duration: 1.8,
-                delay: 0.3 + offset * 2,
-                ease: [0.16, 1, 0.3, 1],
-              }}
-              style={{
-                background:
-                  progress > 75
-                    ? "linear-gradient(90deg, #c2410c, #f97316, #fed7aa)"
-                    : progress > 40
-                    ? "linear-gradient(90deg, #92400e, #f59e0b, #fde68a)"
-                    : "linear-gradient(90deg, #78350f, #d97706, #fbbf24)",
-                boxShadow:
-                  progress > 0
-                    ? "0 0 12px rgba(249,115,22,0.6), 0 0 24px rgba(249,115,22,0.2)"
-                    : "none",
-              }}
-            />
+      {/* SVG canvas */}
+      <div style={{ position: "relative", width: "100%", height: 72, overflow: "hidden" }}>
+        <svg
+          width="100%"
+          height="72"
+          viewBox="0 0 300 72"
+          preserveAspectRatio="none"
+          fill="none"
+          style={{ display: "block" }}
+        >
+          <defs>
+            <filter id="scratchGlow">
+              <feGaussianBlur stdDeviation="1.5" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
 
-            {/* Slash texture overlay */}
-            <div
-              className="absolute inset-0 opacity-20"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(72deg, transparent, transparent 6px, rgba(0,0,0,0.4) 6px, rgba(0,0,0,0.4) 7px)",
-              }}
-            />
-          </div>
+          {/* Ghost track (dim full-length scratches) */}
+          {scratches.map((s, i) => (
+            <g key={`track-${i}`} opacity={0.08}>
+              <path d={`${s.top} L${s.bot.replace("M", "")}`} fill={s.fill} stroke={s.stroke} strokeWidth={s.strokeW} />
+            </g>
+          ))}
 
-          {/* Percent on last bar */}
-          {i === 2 && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-              className="shrink-0 text-sm font-black"
-              style={{
-                fontFamily: "'Bebas Neue', sans-serif",
-                color: "#f97316",
-                letterSpacing: "0.05em",
-                minWidth: 38,
-                textAlign: "right",
-              }}
+          {/* Animated scratches — each clipped to progress width with staggered reveal */}
+          {scratches.map((s, i) => (
+            <motion.g
+              key={`scratch-${i}`}
+              initial={{ clipPath: "inset(0 100% 0 0)" }}
+              animate={{ clipPath: `inset(0 ${100 - progress}% 0 0)` }}
+              transition={{ duration: 1.8, delay: s.delay, ease: [0.16, 1, 0.3, 1] }}
+              filter="url(#scratchGlow)"
             >
-              {progress}%
-            </motion.span>
-          )}
-        </div>
-      ))}
+              {/* Dark fill body */}
+              <path
+                d={`${s.top} L${s.bot.replace(/^M/, "")}`}
+                fill={s.fill}
+                stroke="none"
+              />
+              {/* Top jagged edge */}
+              <path
+                d={s.top}
+                fill="none"
+                stroke={s.stroke}
+                strokeWidth={s.strokeW}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+              {/* Bottom jagged edge */}
+              <path
+                d={`M${s.bot.replace(/^M300/, "300").replace(" Z", "")}`}
+                fill="none"
+                stroke={s.stroke}
+                strokeWidth={s.strokeW * 0.7}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                opacity={0.6}
+              />
+            </motion.g>
+          ))}
+
+          {/* Glowing tip that travels with the fill */}
+          <motion.rect
+            initial={{ x: 0, opacity: 0 }}
+            animate={{ x: (progress / 100) * 300 - 3, opacity: progress > 2 ? 1 : 0 }}
+            transition={{ duration: 1.8, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            y={0}
+            width={3}
+            height={72}
+            fill="rgba(249,115,22,0.35)"
+            style={{ filter: "blur(4px)" }}
+          />
+        </svg>
+      </div>
     </div>
   );
 }
@@ -112,7 +163,7 @@ const slashReveal = {
   visible: (delay: number) => ({
     clipPath: "inset(0 0% 0 0)",
     opacity: 1,
-    transition: { duration: 0.55, delay, ease: [0.77, 0, 0.18, 1] as const },
+    transition: { duration: 0.55, delay, ease: [0.77, 0, 0.18, 1] },
   }),
 };
 
@@ -147,7 +198,7 @@ function ClawScratch({
     >
       <path d="M10 70 Q30 10 45 5" stroke="rgba(249,115,22,0.6)" strokeWidth="1.5" strokeLinecap="round" />
       <path d="M28 72 Q48 12 63 7" stroke="rgba(249,115,22,0.5)" strokeWidth="1.2" strokeLinecap="round" />
-      <path d="M46 74 Q66 14 81 9" stroke="rgba(249,115,22,0.4)" strokeWidth="1" strokeLinecap="round" />
+      <path d="M46 74 Q66 14 81 9" stroke="rgba(249,115,22,0.72)" strokeWidth="1" strokeLinecap="round" />
     </svg>
   );
 }
@@ -197,7 +248,7 @@ function AlertBlock({
           fontFamily: "'Barlow', sans-serif",
           fontSize: 12,
           fontWeight: 300,
-          color: "rgba(255,255,255,0.45)",
+          color: "rgba(255,255,255,0.65)",
           lineHeight: 1.65,
         }}
       >
@@ -361,7 +412,7 @@ export default function OrderPage() {
           font-family: 'Bebas Neue', sans-serif;
           font-size: 9px;
           letter-spacing: 0.3em;
-          color: rgba(249,115,22,0.35);
+          color: rgba(249,115,22,0.7);
           text-transform: uppercase;
         }
 
@@ -369,7 +420,7 @@ export default function OrderPage() {
           font-family: 'Barlow', sans-serif;
           font-size: 13px;
           font-weight: 300;
-          color: rgba(255,255,255,0.45);
+          color: rgba(255,255,255,0.65);
           line-height: 1.65;
         }
 
@@ -462,7 +513,7 @@ export default function OrderPage() {
                 fontFamily: "'Barlow', sans-serif",
                 fontSize: 11,
                 fontWeight: 400,
-                color: "rgba(249,115,22,0.4)",
+                color: "rgba(249,115,22,0.72)",
                 letterSpacing: "0.22em",
                 textTransform: "uppercase",
               }}
@@ -597,7 +648,7 @@ export default function OrderPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                <Info size={13} style={{ color: "rgba(249,115,22,0.4)", flexShrink: 0, marginTop: 2 }} />
+                <Info size={13} style={{ color: "rgba(249,115,22,0.72)", flexShrink: 0, marginTop: 2 }} />
                 <p className="wlv-body" style={{ fontSize: 12 }}>
                   Stay logged out on console, web app, and mobile for the full duration of the transfer.
                 </p>
@@ -693,7 +744,7 @@ export default function OrderPage() {
                     style={{
                       width: 2,
                       height: 10,
-                      background: "rgba(249,115,22,0.4)",
+                      background: "rgba(249,115,22,0.72)",
                       borderRadius: 1,
                       transform: `rotate(${[-8, 0, 8][i]}deg)`,
                     }}
@@ -703,18 +754,8 @@ export default function OrderPage() {
               <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, transparent, rgba(249,115,22,0.3))" }} />
             </div>
 
-            {/* ── THREE CLAW PROGRESS ── */}
+            {/* ── SCRATCH PROGRESS ── */}
             <div style={{ marginBottom: 20 }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 12,
-                }}
-              >
-                <div className="wlv-label">Transfer Progress</div>
-              </div>
               <ClawProgress progress={progress} />
             </div>
 
@@ -865,7 +906,7 @@ export default function OrderPage() {
               style={{
                 fontFamily: "'Barlow', sans-serif",
                 fontSize: 10,
-                color: "rgba(255,255,255,0.18)",
+                color: "rgba(255,255,255,0.45)",
               }}
             >
               {order.lastActivity}
@@ -877,7 +918,7 @@ export default function OrderPage() {
             style={{
               height: 2,
               background:
-                "linear-gradient(90deg, #f97316 0%, rgba(249,115,22,0.4) 50%, transparent 100%)",
+                "linear-gradient(90deg, #f97316 0%, rgba(249,115,22,0.72) 50%, transparent 100%)",
             }}
           />
         </motion.div>
